@@ -17,11 +17,11 @@ import java.net.URL;
 // implementation see: https://developers.google.com/cloud-messaging/server
 public class GcmSender {
 
-    public static final String API_KEY = "";
+    public static final String API_KEY = "AIzaSyCDA4JYOs7GQ5y5Q9IwJzZ3bvwo9G0ciqU";
 
     public static void main(String[] args) {
 
-        args = new String[]{"hello world", "APA91bGTUN049aZ5QeUaXTIQD7OrOkSKd088JbTLUc1xhh3HIvrsJPlGzBOPO2pXMcy98WiwMn0i99Bs6VGhJ94vihKPmSuyvRXebLINX3Fe7mm-_gf3Gmp9yD1737bA9-ti1hWAiDvw"};
+        args = new String[]{"hello world", "e4DpyOXOMDk:APA91bFaSLQxvqPE1TRM-2Zh3AVrp1RxEqtULWzMIkFK38BBSD3L6X7jqCtuESP2UOD8UJAjLLJKSWU9l_hT6vzi6s8KuGXr15WKG6lt_zg03MFPmDIvFzZn3e86t0Dlxjz1JANzfI2x\n"};
 
         if (args.length < 1 || args.length > 2 || args[0] == null) {
             System.err.println("usage: ./gradlew run -Pmsg=\"MESSAGE\" [-Pto=\"DEVICE_TOKEN\"]");

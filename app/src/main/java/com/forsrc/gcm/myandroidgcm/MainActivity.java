@@ -1,129 +1,141 @@
-package com.forsrc.gcm.myandroidgcm;
+/**
+ * Copyright 2015 Google Inc. All Rights Reserved.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+package com.forsrc.gcm.myandroidgcm;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-
-import android.os.Handler;
-import android.support.v7.app.AppCompatActivity;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.forsrc.gcm.R;
-import com.raxdenstudios.gcm.GCMHelper;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    private static final String TAG = "MainActivity";
+
+    private BroadcastReceiver mRegistrationBroadcastReceiver;
+    private ProgressBar mRegistrationProgressBar;
+    private TextView mInformationTextView;
+    private boolean isReceiverRegistered;
+
+    public static MainActivity INSTANCE = null;
     private Handler handler = new Handler();
-    TextView textView;
-    public static MainActivity instance = null;
-
-
-    public static final String BR_TEXT = "update_textview_action";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
-        MainActivity.instance = this;
+        INSTANCE = this;
 
-        textView = (TextView) findViewById(R.id.textView);
-        textView.setTextIsSelectable(true);
-        textView.append("\n------------------\n");
-
-        final Context context = this;
-        GCMHelper.getInstance().registerPlayServices(this,
-                getString(R.string.project_number),
-                new GCMHelper.OnGCMRegisterListener() {
-                    @Override
-                    public void onGooglePlayServicesNotSupported() {
-                        Toast.makeText(getApplicationContext(), "GooglePlayServicesNotSupported",
-                                Toast.LENGTH_SHORT).show();
-                        textView.append("--> GooglePlayServicesNotSupported\n");
-                        textView.append("------------------\n");
-                    }
-
-                    @Override
-                    public void onDeviceRegistered(String registrationId) {
-                        Toast.makeText(getApplicationContext(), registrationId,
-                                Toast.LENGTH_SHORT).show();
-                        textView.append("registrationId: " + registrationId + "\n");
-                        textView.append("------------------\n");
-                        GcmUtils.sendNotification(context, "registrationId: " + registrationId);
-                        MainActivity.updateText(registrationId);
-                    }
-
-                    @Override
-                    public void onDeviceNotRegistered(String message) {
-                        Toast.makeText(getApplicationContext(), message,
-                                Toast.LENGTH_SHORT).show();
-                        textView.append("NotRegistered: " + message + "\n");
-                        textView.append("------------------\n");
-                        GcmUtils.sendNotification(context, "NotRegistered: " + message);
-                    }
-                });
-
-        updateTextView();
-
-        GcmUtils.broadcast(context, BR_TEXT, "message", "hello world, broadcast.");
-    }
-
-    BroadcastReceiver broadcastReceiver = null;
-    private void updateTextView() {
-        broadcastReceiver = new BroadcastReceiver() {
-
+        mRegistrationProgressBar = (ProgressBar) findViewById(R.id.registrationProgressBar);
+        mRegistrationBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String message = intent.getExtras().getString("message");
-                textView.append("message: " + message + "\n");
-                textView.append("------------------\n");
-
+                mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
+                SharedPreferences sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(context);
+                boolean sentToken = sharedPreferences
+                        .getBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false);
+                if (sentToken) {
+                    mInformationTextView.append(getString(R.string.gcm_send_message));
+                } else {
+                    mInformationTextView.append(getString(R.string.token_error_message));
+                }
             }
         };
+        mInformationTextView = (TextView) findViewById(R.id.informationTextView);
+        mInformationTextView.setTextIsSelectable(true);
 
+        // Registering BroadcastReceiver
+        registerReceiver();
 
-        GcmUtils.registerReceiver(this, broadcastReceiver, BR_TEXT);
+        if (checkPlayServices()) {
+            // Start IntentService to register this application with GCM.
+            Intent intent = new Intent(this, RegistrationIntentService.class);
+            startService(intent);
+        }
     }
 
-    protected void onDestroy() {
-        GcmUtils.unregisterReceiver(this, broadcastReceiver);
-        super.onDestroy();
-    };
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver();
+    }
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mRegistrationBroadcastReceiver);
+        isReceiverRegistered = false;
+        super.onPause();
+    }
+
+    private void registerReceiver() {
+        if (!isReceiverRegistered) {
+            LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
+                    new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+            isReceiverRegistered = true;
+        }
+    }
+
+    /**
+     * Check the device to make sure it has the Google Play Services APK. If
+     * it doesn't, display a dialog that allows users to download the APK from
+     * the Google Play Store or enable it in the device's system settings.
+     */
+    private boolean checkPlayServices() {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
+                        .show();
+            } else {
+                Log.i(TAG, "This device is not supported.");
+                finish();
+            }
+            return false;
+        }
+        return true;
+    }
 
     public Handler getHandler() {
-        return handler;
+        return this.handler;
     }
 
-    public void updateTextView(String message) {
-        textView.append("message: " + message + "\n");
-        textView.append("------------------\n");
-    }
-    public static void updateTextView(final MainActivity mainActivity, final String message) {
-        if (mainActivity == null) {
-            return;
-        }
-        mainActivity.getHandler().post(new Runnable() {
+    public void updateText(final String message) {
+        this.handler.post(new Runnable() {
             @Override
             public void run() {
-                mainActivity.updateTextView(message);
-            }
-        });
-    }
-
-    public static void updateText(final String message) {
-        if (MainActivity.instance == null) {
-            return;
-        }
-        MainActivity.instance.getHandler().post(new Runnable() {
-            @Override
-            public void run() {
-                MainActivity.instance.updateTextView(message);
+                mInformationTextView.append("\n-------------------\n");
+                mInformationTextView.append("message: " + message);
+                mInformationTextView.append("\n-------------------\n");
             }
         });
     }
