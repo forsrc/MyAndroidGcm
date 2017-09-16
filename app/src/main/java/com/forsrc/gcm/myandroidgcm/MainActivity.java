@@ -34,6 +34,9 @@ import com.forsrc.gcm.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
+import static com.forsrc.gcm.myandroidgcm.RegistrationIntentService.REGISTRATION_COMPLETE;
+import static com.forsrc.gcm.myandroidgcm.RegistrationIntentService.SENT_TOKEN_TO_SERVER;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -61,10 +64,10 @@ public class MainActivity extends AppCompatActivity {
                 mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
-                boolean sentToken = sharedPreferences
-                        .getBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false);
-                if (sentToken) {
-                    mInformationTextView.append(getString(R.string.gcm_send_message));
+                String token = sharedPreferences
+                        .getString(SENT_TOKEN_TO_SERVER, null);
+                if (token != null) {
+                    mInformationTextView.append(token);
                 } else {
                     mInformationTextView.append(getString(R.string.token_error_message));
                 }
@@ -99,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private void registerReceiver() {
         if (!isReceiverRegistered) {
             LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
-                    new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+                    new IntentFilter(REGISTRATION_COMPLETE));
             isReceiverRegistered = true;
         }
     }

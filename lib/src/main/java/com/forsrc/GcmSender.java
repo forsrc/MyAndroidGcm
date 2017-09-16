@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 
 // NOTE:
 // This class emulates a server for the purposes of this sample,
@@ -17,11 +18,13 @@ import java.net.URL;
 // implementation see: https://developers.google.com/cloud-messaging/server
 public class GcmSender {
 
-    public static final String API_KEY = "AIzaSyCDA4JYOs7GQ5y5Q9IwJzZ3bvwo9G0ciqU";
+    public static final String API_KEY = "";
 
     public static void main(String[] args) {
 
-        args = new String[]{"hello world", "e4DpyOXOMDk:APA91bFaSLQxvqPE1TRM-2Zh3AVrp1RxEqtULWzMIkFK38BBSD3L6X7jqCtuESP2UOD8UJAjLLJKSWU9l_hT6vzi6s8KuGXr15WKG6lt_zg03MFPmDIvFzZn3e86t0Dlxjz1JANzfI2x\n"};
+        args = new String[]{"hello world -> " + new Date(),
+                "e4DpyOXOMDk:APA91bFaSLQxvqPE1TRM-2Zh3AVrp1RxEqtULWzMIkFK38BBSD3L6X7jqCtuESP2UOD8UJAjLLJKSWU9l_hT6vzi6s8KuGXr15WKG6lt_zg03MFPmDIvFzZn3e86t0Dlxjz1JANzfI2x"
+        };
 
         if (args.length < 1 || args.length > 2 || args[0] == null) {
             System.err.println("usage: ./gradlew run -Pmsg=\"MESSAGE\" [-Pto=\"DEVICE_TOKEN\"]");
