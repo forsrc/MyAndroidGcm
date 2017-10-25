@@ -15,18 +15,21 @@ public class GcmUtils {
     public static void sendNotification(Context context, String message) {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        Intent intent = new Intent(context, MainActivity.class)
+        intent.setAction(message); //TODO
+        intent.putExtra("message", message);
 
         PendingIntent contentIntent =
-                PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class), 0);
+                PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.ic_launcher)
                         .setContentTitle("SNS GCM Notification")
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
-                        .setContentText(message);
+                        .setContentText(message)
+                        .setContentIntent(contentIntent);
 
-        mBuilder.setContentIntent(contentIntent);
         manager.notify(0, mBuilder.build());
     }
 
